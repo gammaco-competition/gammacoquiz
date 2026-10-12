@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>แบบทดสอบปรนัยออนไลน์</title>
+  <title>แบบทดสอบอบรม Product</title>
 
   <!-- Google Fonts: Prompt -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -65,6 +65,19 @@
       align-items: center;
       gap: 10px;
     }
+
+    .net-status {
+      font-size: 0.85rem;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .net-status.online { background: #dcfce7; color: #15803d; }
+    .net-status.offline { background: #fee2e2; color: #b91c1c; }
 
     .settings-btn {
       background: #ffffff;
@@ -307,9 +320,14 @@
   <div class="container">
     <div class="top-bar">
       <div class="title"><i class="fa-solid fa-graduation-cap"></i> แบบทดสอบการอบรม</div>
-      <button class="settings-btn" onclick="openSettingsModal()">
-        <i class="fa-solid fa-gear"></i> ตั้งค่า
-      </button>
+      <div style="display: flex; gap: 10px; align-items: center;">
+        <span id="netStatusBadge" class="net-status online">
+          <i class="fa-solid fa-wifi"></i> Stable
+        </span>
+        <button class="settings-btn" onclick="openSettingsModal()">
+          <i class="fa-solid fa-gear"></i> ตั้งค่า
+        </button>
+      </div>
     </div>
 
     <!-- Card 1: เลือกแผนก และ ชื่อ-สกุล -->
@@ -437,8 +455,7 @@
   </div>
 
   <script>
-    // ⚠️ นำ Web App URL ที่ได้จากการ Deploy ใน Google Apps Script มาวางที่นี่ (ใช้กรณีเปิดบน GitHub Pages)
-    const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxHJ7KWl7TXrjnaKpgbOWElwt2rG0VsGd_FUd9WNe3pGO3zAzx9iicx6hbZ8_tE_sHnHA/exec";
+    const GAS_WEB_APP_URL = "วาง_WEB_APP_URL_ที่นี่";
 
     let globalData = null;
     let activeQuizSheet = '';
@@ -455,9 +472,64 @@
     let timerInterval = null;
     let secondsElapsed = 0;
 
-    // ระบบตรวจจับอัตโนมัติ (Auto Hybrid Engine)
+    // --- Helper ฟังก์ชันสำหรับการเซฟร่าง LocalStorage ---
+    function getDraftKey() {
+      const dept = document.getElementById('deptSelect').value;
+      const name = document.getElementById('userSelect').value;
+      if (dept && name && activeQuizSheet) {
+        return `quiz_draft_${dept}_${name}_${activeQuizSheet}`;
+      }
+      return null;
+    }
+
+    function saveDraftAnswers() {
+      const key = getDraftKey();
+      if (key) {
+        localStorage.setItem(key, JSON.stringify(savedUserAnswers));
+      }
+    }
+
+    function loadDraftAnswers() {
+      const key = getDraftKey();
+      if (key) {
+        const saved = localStorage.getItem(key);
+        if (saved) {
+          try {
+            return JSON.parse(saved);
+          } catch (e) {
+            return {};
+          }
+        }
+      }
+      return {};
+    }
+
+    function clearDraftAnswers() {
+      const key = getDraftKey();
+      if (key) localStorage.removeItem(key);
+    }
+
+    // --- ตรวจสอบสถานะการเชื่อมต่อเครือข่าย ---
+    function updateNetStatus() {
+      const badge = document.getElementById('netStatusBadge');
+      if (navigator.onLine) {
+        badge.className = 'net-status online';
+        badge.innerHTML = '<i class="fa-solid fa-wifi"></i> Stable';
+        checkAndSubmitPendingQueue();
+      } else {
+        badge.className = 'net-status offline';
+        badge.innerHTML = '<i class="fa-solid fa-wifi-slash"></i> Unstable';
+      }
+    }
+
+    window.addEventListener('online', updateNetStatus);
+    window.addEventListener('offline', updateNetStatus);
+
     async function callGasApi(action, payload = {}) {
-      // 1. หากรันอยู่บน Google Apps Script Web App โดยตรง
+      if (!navigator.onLine) {
+        throw new Error("ขณะนี้สัญญาณอินเทอร์เน็ตขาดการเชื่อมต่อ (Offline)");
+      }
+
       if (typeof google !== 'undefined' && google.script && google.script.run) {
         return new Promise((resolve, reject) => {
           const runner = google.script.run
@@ -471,9 +543,7 @@
           else if (action === 'saveAdminSettings') runner.saveAdminSettings(payload.password, payload.quizSheetName, payload.enableAnswerMode, payload.displayLayout, payload.isGlobalScope);
           else reject(new Error('Unknown action: ' + action));
         });
-      } 
-      // 2. หากรันอยู่บน GitHub Pages
-      else {
+      } else {
         if (!GAS_WEB_APP_URL || GAS_WEB_APP_URL.includes("วาง_WEB_APP_URL")) {
           throw new Error("กรุณาระบุ GAS_WEB_APP_URL ในไฟล์ Index.html เมื่อใช้งานบน GitHub Pages");
         }
@@ -488,6 +558,7 @@
     }
 
     document.addEventListener('DOMContentLoaded', () => {
+      updateNetStatus();
       loadInitialData();
     });
 
@@ -613,6 +684,7 @@
       try {
         const qRes = await callGasApi('getQuizQuestions', { quizSheetName: activeQuizSheet });
         if (!qRes.success) {
+          Swal.close();
           Swal.fire('ข้อผิดพลาด', qRes.message, 'error');
           return;
         }
@@ -628,6 +700,7 @@
         });
 
         Swal.close();
+
         const statusBanner = document.getElementById('statusBanner');
         const statusText = document.getElementById('statusBannerText');
 
@@ -635,12 +708,13 @@
           isUserSubmitted = true;
           statusBanner.style.display = 'flex';
           statusText.innerHTML = showAnswerMode 
-            ? `ผู้ทำแบบทดสอบท่านนี้ทำชุดนี้เรียบร้อยแล้ว (คะแนนที่ได้: <strong>${subRes.totalScore} / ${subRes.totalQuestions}</strong> คะแนน)`
-            : `ผู้ทำแบบทดสอบท่านนี้ทำชุดนี้เรียบร้อยแล้ว`;
+            ? `คุณทำแบบทดสอบเรียบร้อยแล้ว (คะแนนที่ได้: <strong>${subRes.totalScore} / ${subRes.totalQuestions}</strong> คะแนน)`
+            : `คุณทำแบบทดสอบเรียบร้อยแล้ว`;
 
           savedCorrectAnswers = subRes.correctAnswers || {};
           scoresPerQuestionGlobal = subRes.scoresPerQuestion;
-          
+          clearDraftAnswers();
+
           stopTimer();
           document.getElementById('quizTimerBadge').style.display = 'none';
           renderQuizForm(true, subRes.scoresPerQuestion);
@@ -649,10 +723,14 @@
           statusBanner.style.display = 'none';
           scoresPerQuestionGlobal = null;
           
+          // ดึงร่างคำตอบที่เซฟไว้ใน LocalStorage (ถ้ามี)
+          savedUserAnswers = loadDraftAnswers();
+
           startTimer();
           renderQuizForm(false, null);
         }
       } catch (err) {
+        Swal.close();
         Swal.fire('ข้อผิดพลาด', err.message, 'error');
       }
     }
@@ -791,6 +869,7 @@
 
     function onChoiceSelect(qId, choiceKey) {
       savedUserAnswers[qId] = choiceKey;
+      saveDraftAnswers(); // เซฟร่างคำตอบลง LocalStorage ทันที
     }
 
     function submitAnswers() {
@@ -822,6 +901,19 @@
     }
 
     async function processSubmit(dept, name) {
+      const payload = {
+        department: dept,
+        fullName: name,
+        quizSheetName: activeQuizSheet,
+        userAnswers: savedUserAnswers
+      };
+
+      // กรณีที่เครื่องไม่ได้เชื่อมต่อเน็ตขณะกดส่ง
+      if (!navigator.onLine) {
+        savePendingSubmission(payload);
+        return;
+      }
+
       Swal.fire({
         title: 'กำลังบันทึกคำตอบ...',
         allowOutsideClick: false,
@@ -829,35 +921,82 @@
       });
 
       try {
-        const res = await callGasApi('submitQuiz', {
-          department: dept,
-          fullName: name,
-          quizSheetName: activeQuizSheet,
-          userAnswers: savedUserAnswers
-        });
+        const res = await callGasApi('submitQuiz', payload);
 
         if (res.success) {
           stopTimer();
-          let timeUsedText = document.getElementById('timerText').innerText;
+          clearDraftAnswers();
+          localStorage.removeItem('pending_quiz_submission');
 
+          let timeUsedText = document.getElementById('timerText').innerText;
           let successText = showAnswerMode 
             ? `ใช้เวลาทำแบบทดสอบ: ${timeUsedText} นาที\nคะแนนของคุณคือ ${res.totalScore} / ${res.totalQuestions} คะแนน` 
             : `ใช้เวลาทำแบบทดสอบ: ${timeUsedText} นาที\nระบบได้บันทึกคำตอบของคุณเรียบร้อยแล้ว`;
+
+          isUserSubmitted = true;
+          savedCorrectAnswers = res.correctAnswers || {};
+          scoresPerQuestionGlobal = res.scoresPerQuestion;
+
+          const statusBanner = document.getElementById('statusBanner');
+          const statusText = document.getElementById('statusBannerText');
+          statusBanner.style.display = 'flex';
+          statusText.innerHTML = showAnswerMode 
+            ? `ผู้ทำแบบทดสอบท่านนี้ทำชุดนี้เรียบร้อยแล้ว (คะแนนที่ได้: <strong>${res.totalScore} / ${res.totalQuestions}</strong> คะแนน)`
+            : `ผู้ทำแบบทดสอบท่านนี้ทำชุดนี้เรียบร้อยแล้ว`;
+
+          document.getElementById('quizTimerBadge').style.display = 'none';
+          renderQuizForm(true, res.scoresPerQuestion);
 
           Swal.fire({
             icon: 'success',
             title: 'ส่งคำตอบเรียบร้อยแล้ว!',
             text: successText,
             confirmButtonText: 'ตกลง'
-          }).then(() => {
-            savedCorrectAnswers = res.correctAnswers;
-            onUserChange();
           });
+
         } else {
           Swal.fire('ข้อผิดพลาด', res.message, 'error');
         }
       } catch (err) {
-        Swal.fire('ข้อผิดพลาด', err.message, 'error');
+        // หากเน็ตหลุด/ไม่เสถียรขณะกำลังยิง API ให้ตั้งคิวไว้ในเครื่อง
+        savePendingSubmission(payload);
+      }
+    }
+
+    function savePendingSubmission(payload) {
+      localStorage.setItem('pending_quiz_submission', JSON.stringify(payload));
+      Swal.fire({
+        icon: 'warning',
+        title: 'สัญญาณอินเทอร์เน็ตไม่เสถียร!',
+        text: 'ระบบได้เซฟคำตอบของคุณปลอดภัยไว้ในเครื่องเรียบร้อยแล้ว เมื่ออินเทอร์เน็ตกลับมาใช้ได้ ระบบจะส่งคำตอบเข้า Google Sheets ให้อัตโนมัติ',
+        confirmButtonText: 'รับทราบ'
+      });
+    }
+
+    async function checkAndSubmitPendingQueue() {
+      const pending = localStorage.getItem('pending_quiz_submission');
+      if (pending && navigator.onLine) {
+        try {
+          const payload = JSON.parse(pending);
+          Swal.fire({
+            title: 'เน็ตกลับมาแล้ว กำลังส่งคำตอบค้างส่ง...',
+            allowOutsideClick: false,
+            didOpen: () => Swal.showLoading()
+          });
+
+          const res = await callGasApi('submitQuiz', payload);
+          if (res.success) {
+            localStorage.removeItem('pending_quiz_submission');
+            clearDraftAnswers();
+            Swal.fire('ส่งคำตอบสำเร็จ!', 'ระบบส่งคำตอบค้างส่งของคุณให้อัตโนมัติเรียบร้อยแล้ว', 'success').then(() => {
+              if (document.getElementById('userSelect').value === payload.fullName) {
+                onUserChange();
+              }
+            });
+          }
+        } catch (e) {
+          console.error("Auto retry submission error:", e);
+        }
       }
     }
 
@@ -911,7 +1050,6 @@
       const isGlobalScope = document.getElementById('modalScopeSelect').value === 'global';
 
       if (!isGlobalScope) {
-        // Local Scope
         activeQuizSheet = newQuizSheet;
         displayLayout = newLayout;
         showAnswerMode = enableAnswerMode;
@@ -926,7 +1064,6 @@
           resetQuizUI();
         }
       } else {
-        // Global Scope
         Swal.fire({
           title: 'กำลังบันทึกตั้งค่าระดับระบบ...',
           allowOutsideClick: false,
