@@ -837,7 +837,7 @@
       const q = shuffledQuestions[currentQuestionIndex];
       const qId = q.id;
       const total = shuffledQuestions.length;
-      const displayLabels = ["ก", "ข", "ค", "ง"];
+      const displayLabels = ["A", "B", "C", "D"];
 
       document.getElementById('questionProgress').innerText = `ข้อ ${currentQuestionIndex + 1} / ${total}`;
       document.getElementById('btnPrevQ').disabled = currentQuestionIndex === 0;
