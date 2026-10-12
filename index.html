@@ -325,7 +325,7 @@
           <i class="fa-solid fa-wifi"></i> Stable
         </span>
         <button class="settings-btn" onclick="openSettingsModal()">
-          <i class="fa-solid fa-gear"></i>    
+          <i class="fa-solid fa-gear"></i>   
         </button>
       </div>
     </div>
@@ -690,7 +690,13 @@
         }
 
         currentQuestions = qRes.questions;
-        shuffledQuestions = shuffleArray(currentQuestions);
+
+        // สลับลำดับข้อสอบ และสลับสุ่มลำดับตัวเลือกภายในแต่ละข้อ
+        shuffledQuestions = shuffleArray(currentQuestions).map(q => ({
+          ...q,
+          shuffledKeys: shuffleArray(Object.keys(q.options))
+        }));
+
         currentQuestionIndex = 0;
 
         const subRes = await callGasApi('getUserSubmission', {
@@ -723,7 +729,6 @@
           statusBanner.style.display = 'none';
           scoresPerQuestionGlobal = null;
           
-          // ดึงร่างคำตอบที่เซฟไว้ใน LocalStorage (ถ้ามี)
           savedUserAnswers = loadDraftAnswers();
 
           startTimer();
@@ -773,7 +778,8 @@
     }
 
     function renderAllQuestionsView(container, isSubmitted, scoresPerQuestion) {
-      let questionsToRender = isSubmitted ? currentQuestions : shuffledQuestions;
+      let questionsToRender = (shuffledQuestions && shuffledQuestions.length > 0) ? shuffledQuestions : currentQuestions;
+      const displayLabels = ["ก", "ข", "ค", "ง"];
 
       let html = '';
       questionsToRender.forEach((q, index) => {
@@ -792,8 +798,11 @@
             <div class="options-grid">
         `;
 
-        Object.keys(q.options).forEach(choiceKey => {
+        const optionKeys = q.shuffledKeys || Object.keys(q.options);
+
+        optionKeys.forEach((choiceKey, optIndex) => {
           const choiceText = q.options[choiceKey];
+          const displayLabel = displayLabels[optIndex] || choiceKey; // แสดงเป็น (ก), (ข), (ค), (ง) ตามลำดับแถว
           const radioName = `q_${qId}`;
           const isChecked = savedUserAnswers[qId] === choiceKey ? 'checked' : '';
           const isDisabled = isSubmitted ? 'disabled' : '';
@@ -801,16 +810,19 @@
           html += `
             <label class="option-label">
               <input type="radio" name="${radioName}" value="${choiceKey}" ${isChecked} ${isDisabled} onchange="onChoiceSelect(${qId}, '${choiceKey}')">
-              <span><strong>(${choiceKey})</strong> ${choiceText}</span>
+              <span><strong>(${displayLabel})</strong> ${choiceText}</span>
             </label>
           `;
         });
 
         if (showAnswerMode && savedCorrectAnswers[qId]) {
           const correctKey = savedCorrectAnswers[qId];
+          const correctIndex = optionKeys.indexOf(correctKey);
+          const correctDisplayLabel = correctIndex !== -1 ? (displayLabels[correctIndex] || correctKey) : correctKey;
+
           html += `
             <div style="margin-top: 10px; font-size: 0.9rem; color: #15803d;">
-              <i class="fa-solid fa-circle-check"></i> <strong>เฉลยคำตอบที่ถูกต้อง:</strong> ข้อ (${correctKey}) ${q.options[correctKey] || ''}
+              <i class="fa-solid fa-circle-check"></i> <strong>เฉลยคำตอบที่ถูกต้อง:</strong> ข้อ (${correctDisplayLabel}) ${q.options[correctKey] || ''}
             </div>
           `;
         }
@@ -825,6 +837,7 @@
       const q = shuffledQuestions[currentQuestionIndex];
       const qId = q.id;
       const total = shuffledQuestions.length;
+      const displayLabels = ["ก", "ข", "ค", "ง"];
 
       document.getElementById('questionProgress').innerText = `ข้อ ${currentQuestionIndex + 1} / ${total}`;
       document.getElementById('btnPrevQ').disabled = currentQuestionIndex === 0;
@@ -836,15 +849,18 @@
           <div class="options-grid">
       `;
 
-      Object.keys(q.options).forEach(choiceKey => {
+      const optionKeys = q.shuffledKeys || Object.keys(q.options);
+
+      optionKeys.forEach((choiceKey, optIndex) => {
         const choiceText = q.options[choiceKey];
+        const displayLabel = displayLabels[optIndex] || choiceKey;
         const radioName = `q_${qId}`;
         const isChecked = savedUserAnswers[qId] === choiceKey ? 'checked' : '';
 
         html += `
           <label class="option-label">
             <input type="radio" name="${radioName}" value="${choiceKey}" ${isChecked} onchange="onChoiceSelect(${qId}, '${choiceKey}')">
-            <span><strong>(${choiceKey})</strong> ${choiceText}</span>
+            <span><strong>(${displayLabel})</strong> ${choiceText}</span>
           </label>
         `;
       });
@@ -869,7 +885,7 @@
 
     function onChoiceSelect(qId, choiceKey) {
       savedUserAnswers[qId] = choiceKey;
-      saveDraftAnswers(); // เซฟร่างคำตอบลง LocalStorage ทันที
+      saveDraftAnswers();
     }
 
     function submitAnswers() {
@@ -908,7 +924,6 @@
         userAnswers: savedUserAnswers
       };
 
-      // กรณีที่เครื่องไม่ได้เชื่อมต่อเน็ตขณะกดส่ง
       if (!navigator.onLine) {
         savePendingSubmission(payload);
         return;
@@ -941,8 +956,8 @@
           const statusText = document.getElementById('statusBannerText');
           statusBanner.style.display = 'flex';
           statusText.innerHTML = showAnswerMode 
-            ? `ผู้ทำแบบทดสอบท่านนี้ทำชุดนี้เรียบร้อยแล้ว (คะแนนที่ได้: <strong>${res.totalScore} / ${res.totalQuestions}</strong> คะแนน)`
-            : `ผู้ทำแบบทดสอบท่านนี้ทำชุดนี้เรียบร้อยแล้ว`;
+            ? `คุณทำแบบทดสอบเรียบร้อยแล้ว (คะแนนที่ได้: <strong>${res.totalScore} / ${res.totalQuestions}</strong> คะแนน)`
+            : `คุณทำแบบทดสอบเรียบร้อยแล้ว`;
 
           document.getElementById('quizTimerBadge').style.display = 'none';
           renderQuizForm(true, res.scoresPerQuestion);
@@ -958,7 +973,6 @@
           Swal.fire('ข้อผิดพลาด', res.message, 'error');
         }
       } catch (err) {
-        // หากเน็ตหลุด/ไม่เสถียรขณะกำลังยิง API ให้ตั้งคิวไว้ในเครื่อง
         savePendingSubmission(payload);
       }
     }
