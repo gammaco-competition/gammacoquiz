@@ -1,0 +1,970 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>แบบทดสอบปรนัยออนไลน์</title>
+
+  <!-- Google Fonts: Prompt -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Font Awesome Icons & SweetAlert2 -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+  <style>
+    :root {
+      --font-size-base: 16px;
+      --primary-color: #4f46e5;
+      --primary-hover: #4338ca;
+      --bg-gradient: linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%);
+      --card-bg: rgba(255, 255, 255, 0.95);
+      --card-border: rgba(255, 255, 255, 0.8);
+      --text-main: #1e293b;
+      --text-muted: #64748b;
+      --correct-bg: #f0fdf4;
+      --correct-border: #22c55e;
+      --incorrect-bg: #fef2f2;
+      --incorrect-border: #ef4444;
+    }
+
+    * {
+      box-sizing: border-box;
+      font-family: 'Prompt', sans-serif;
+      transition: background-color 0.2s, border-color 0.2s;
+    }
+
+    body {
+      margin: 0;
+      padding: 24px 14px;
+      font-size: var(--font-size-base);
+      background: var(--bg-gradient);
+      color: var(--text-main);
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .title {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--primary-color);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .settings-btn {
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      padding: 8px 16px;
+      border-radius: 30px;
+      cursor: pointer;
+      font-weight: 500;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .settings-btn:hover { background: #f8fafc; }
+
+    .card {
+      background: var(--card-bg);
+      backdrop-filter: blur(10px);
+      border: 1px solid var(--card-border);
+      border-radius: 20px;
+      padding: 28px;
+      margin-bottom: 24px;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.01);
+    }
+
+    .card-title {
+      font-size: 1.2rem;
+      font-weight: 600;
+      margin-bottom: 20px;
+      color: var(--primary-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 2px solid #e2e8f0;
+      padding-bottom: 12px;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .header-badges {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .quiz-badge {
+      font-size: 0.85rem;
+      background: #e0e7ff;
+      color: var(--primary-color);
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-weight: 600;
+    }
+
+    .timer-badge {
+      font-size: 0.85rem;
+      background: #fef3c7;
+      color: #b45309;
+      border: 1px solid #fde68a;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .form-group { margin-bottom: 16px; }
+    label { display: block; margin-bottom: 6px; font-weight: 500; }
+
+    select, input[type="text"], input[type="password"] {
+      width: 100%;
+      padding: 10px 14px;
+      border-radius: 10px;
+      border: 1px solid #cbd5e1;
+      font-size: 1rem;
+      outline: none;
+      background: #fff;
+    }
+
+    select:focus, input:focus {
+      border-color: var(--primary-color);
+      box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
+    }
+
+    .question-item {
+      padding: 20px 8px;
+      border-bottom: 1px solid #e2e8f0;
+      background: transparent;
+      border-radius: 12px;
+      margin-bottom: 8px;
+    }
+
+    .question-item:last-child {
+      border-bottom: none;
+      padding-bottom: 0;
+    }
+
+    .question-text {
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin-bottom: 14px;
+      color: #0f172a;
+    }
+
+    .options-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .option-label {
+      display: flex;
+      align-items: center;
+      padding: 12px 16px;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      cursor: pointer;
+      background: #f8fafc;
+      gap: 12px;
+      transition: all 0.15s ease;
+    }
+
+    .option-label:hover {
+      background: #eef2ff;
+      border-color: #c7d2fe;
+    }
+
+    .option-label input[type="radio"] {
+      width: 18px;
+      height: 18px;
+      accent-color: var(--primary-color);
+    }
+
+    .question-item.is-correct {
+      background-color: var(--correct-bg) !important;
+      border-left: 5px solid var(--correct-border) !important;
+      padding: 18px;
+      margin-bottom: 16px;
+    }
+
+    .question-item.is-incorrect {
+      background-color: var(--incorrect-bg) !important;
+      border-left: 5px solid var(--incorrect-border) !important;
+      padding: 18px;
+      margin-bottom: 16px;
+    }
+
+    .single-nav-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 20px;
+      gap: 10px;
+    }
+
+    .btn-nav {
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      padding: 10px 20px;
+      border-radius: 10px;
+      font-weight: 600;
+      cursor: pointer;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-nav:hover { background: #eef2ff; border-color: var(--primary-color); color: var(--primary-color); }
+    .btn-nav:disabled { opacity: 0.5; cursor: not-allowed; background: #f1f5f9; border-color: #cbd5e1; color: var(--text-muted); }
+
+    .question-progress {
+      font-weight: 600;
+      color: var(--primary-color);
+      font-size: 0.95rem;
+    }
+
+    .btn-submit {
+      width: 100%;
+      background: var(--primary-color);
+      color: white;
+      border: none;
+      padding: 14px;
+      font-size: 1.1rem;
+      font-weight: 600;
+      border-radius: 12px;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+      margin-top: 20px;
+    }
+
+    .btn-submit:hover { background: var(--primary-hover); }
+    .btn-submit:disabled { background: #94a3b8; cursor: not-allowed; box-shadow: none; }
+
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.5);
+      backdrop-filter: blur(4px);
+      z-index: 1000;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .modal-content {
+      background: #fff;
+      padding: 24px;
+      border-radius: 16px;
+      width: 90%;
+      max-width: 440px;
+      box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);
+    }
+
+    .font-size-controls { display: flex; gap: 10px; margin-bottom: 16px; }
+    .font-btn {
+      flex: 1; padding: 8px; border: 1px solid #cbd5e1; background: #f8fafc;
+      border-radius: 8px; cursor: pointer; font-weight: 600;
+    }
+    .font-btn.active { background: var(--primary-color); color: #fff; border-color: var(--primary-color); }
+
+    .alert-banner {
+      padding: 12px 16px;
+      background: #fef3c7;
+      color: #92400e;
+      border-radius: 10px;
+      margin-top: 16px;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <div class="top-bar">
+      <div class="title"><i class="fa-solid fa-graduation-cap"></i> แบบทดสอบการอบรม</div>
+      <button class="settings-btn" onclick="openSettingsModal()">
+        <i class="fa-solid fa-gear"></i> ตั้งค่า
+      </button>
+    </div>
+
+    <!-- Card 1: เลือกแผนก และ ชื่อ-สกุล -->
+    <div class="card">
+      <div class="card-title">
+        <span><i class="fa-solid fa-user-gear"></i> ข้อมูลผู้ทำแบบทดสอบ</span>
+      </div>
+      <div class="form-group">
+        <label for="deptSelect"><i class="fa-solid fa-building"></i> แผนก/ตำแหน่ง :</label>
+        <select id="deptSelect" onchange="onDepartmentChange()">
+          <option value="">-- กรุณาเลือกแผนก --</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="userSelect"><i class="fa-solid fa-user"></i> ชื่อ-สกุล :</label>
+        <select id="userSelect" onchange="onUserChange()" disabled>
+          <option value="">-- กรุณาเลือกชื่อ-สกุล --</option>
+        </select>
+      </div>
+
+      <div id="statusBanner" class="alert-banner" style="display: none;">
+        <i class="fa-solid fa-circle-info"></i> <span id="statusBannerText"></span>
+      </div>
+    </div>
+
+    <!-- Card 2: แบบทดสอบ -->
+    <div class="card">
+      <div class="card-title">
+        <span><i class="fa-solid fa-list-check"></i> แบบทดสอบ</span>
+        <div class="header-badges">
+          <span class="timer-badge" id="quizTimerBadge" style="display: none;">
+            <i class="fa-solid fa-clock"></i> เวลา: <span id="timerText">00:00</span>
+          </span>
+          <span class="quiz-badge" id="currentQuizBadge">ชุดแบบทดสอบ: -</span>
+        </div>
+      </div>
+      
+      <div id="quizContainer">
+        <p style="text-align: center; color: var(--text-muted); padding: 20px 0;">กรุณาเลือกแผนกและชื่อ-สกุลก่อนเริ่มทำแบบทดสอบ</p>
+      </div>
+
+      <!-- ปุ่มนำทางสำหรับโหมดแสดงทีละข้อ -->
+      <div id="singleNavBar" class="single-nav-bar" style="display: none;">
+        <button id="btnPrevQ" class="btn-nav" onclick="prevQuestion()"><i class="fa-solid fa-chevron-left"></i> ย้อนกลับ</button>
+        <span id="questionProgress" class="question-progress">ข้อ 1 / 1</span>
+        <button id="btnNextQ" class="btn-nav" onclick="nextQuestion()">ถัดไป <i class="fa-solid fa-chevron-right"></i></button>
+      </div>
+
+      <button id="btnSubmit" class="btn-submit" onclick="submitAnswers()" style="display: none;" disabled>
+        <i class="fa-solid fa-paper-plane"></i> ส่งคำตอบ
+      </button>
+    </div>
+  </div>
+
+  <!-- Modal Settings -->
+  <div id="settingsModal" class="modal-overlay">
+    <div class="modal-content">
+      <h3 style="margin-top:0; color: var(--primary-color);"><i class="fa-solid fa-sliders"></i> ตั้งค่าระบบ</h3>
+      
+      <div class="form-group">
+        <label>ปรับขนาด Font :</label>
+        <div class="font-size-controls">
+          <button class="font-btn" onclick="setFontSize(14, this)">เล็ก</button>
+          <button class="font-btn active" onclick="setFontSize(16, this)">ปกติ</button>
+          <button class="font-btn" onclick="setFontSize(18, this)">ใหญ่</button>
+          <button class="font-btn" onclick="setFontSize(20, this)">ใหญ่พิเศษ</button>
+        </div>
+      </div>
+
+      <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 16px 0;">
+
+      <div id="passwordSection" class="form-group">
+        <label style="color: #b91c1c;"><i class="fa-solid fa-lock"></i> กรอกรหัสผ่านเพื่อตั้งค่า :</label>
+        <div style="display: flex; gap: 8px;">
+          <input type="password" id="adminPassword" placeholder="" onkeyup="if(event.key==='Enter') verifyAndUnlockSettings()">
+          <button type="button" class="settings-btn" style="background: var(--primary-color); color: #fff; border: none; white-space: nowrap; border-radius: 10px;" onclick="verifyAndUnlockSettings()">
+            ปลดล็อก
+          </button>
+        </div>
+      </div>
+
+      <div id="adminControlsSection" style="display: none;">
+        <div style="background: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; padding: 8px 12px; border-radius: 8px; font-size: 0.85rem; margin-bottom: 12px; font-weight: 500;">
+          <i class="fa-solid fa-circle-check"></i> ปลดล็อกสิทธิ์ผู้ดูแลระบบเรียบร้อยแล้ว
+        </div>
+
+        <div class="form-group">
+          <label><i class="fa-solid fa-file-pen"></i> เลือกชุดแบบทดสอบ :</label>
+          <select id="modalQuizSelect"></select>
+        </div>
+
+        <div class="form-group">
+          <label><i class="fa-solid fa-table-cells"></i> รูปแบบการแสดงผลคำถาม :</label>
+          <select id="modalLayoutSelect">
+            <option value="all">แสดงทุกข้อพร้อมกัน (All-in-one)</option>
+            <option value="single">แสดงทีละข้อ (One-by-one)</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label><i class="fa-solid fa-eye"></i> แสดงคำตอบ/เฉลย :</label>
+          <select id="modalAnswerModeSelect">
+            <option value="false">ปิดเฉลย (ซ่อนคะแนนและสีคำตอบ)</option>
+            <option value="true">เปิดเฉลย (แสดงคะแนนและสีคำตอบ)</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label><i class="fa-solid fa-globe"></i> ขอบเขตการบันทึก :</label>
+          <select id="modalScopeSelect">
+            <option value="global" selected>ทุกเครื่องที่เข้าใช้งาน (Global System)</option>
+            <option value="local">เฉพาะเครื่องนี้ (Local Machine)</option>
+          </select>
+        </div>
+
+        <button class="btn-submit" style="background:#22c55e; margin-top: 10px;" onclick="saveSettings()">
+          <i class="fa-solid fa-floppy-disk"></i> บันทึกการตั้งค่า
+        </button>
+      </div>
+
+      <button style="width: 100%; margin-top: 10px; padding: 10px; border: none; background: #e2e8f0; border-radius: 10px; cursor: pointer; font-weight: 600;" onclick="closeSettingsModal()">
+        ยกเลิก / ปิดหน้าต่าง
+      </button>
+    </div>
+  </div>
+
+  <script>
+    // ⚠️ นำ Web App URL ที่ได้จากการ Deploy ใน Google Apps Script มาวางที่นี่ (ใช้กรณีเปิดบน GitHub Pages)
+    const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxHJ7KWl7TXrjnaKpgbOWElwt2rG0VsGd_FUd9WNe3pGO3zAzx9iicx6hbZ8_tE_sHnHA/exec";
+
+    let globalData = null;
+    let activeQuizSheet = '';
+    let currentQuestions = [];
+    let shuffledQuestions = [];
+    let showAnswerMode = false;
+    let displayLayout = 'all';
+    let currentQuestionIndex = 0;
+    let isUserSubmitted = false;
+    let savedUserAnswers = {};
+    let savedCorrectAnswers = {};
+    let scoresPerQuestionGlobal = null;
+
+    let timerInterval = null;
+    let secondsElapsed = 0;
+
+    // ระบบตรวจจับอัตโนมัติ (Auto Hybrid Engine)
+    async function callGasApi(action, payload = {}) {
+      // 1. หากรันอยู่บน Google Apps Script Web App โดยตรง
+      if (typeof google !== 'undefined' && google.script && google.script.run) {
+        return new Promise((resolve, reject) => {
+          const runner = google.script.run
+            .withSuccessHandler((res) => resolve(res))
+            .withFailureHandler((err) => reject(err));
+
+          if (action === 'getInitialData') runner.getInitialDataWrapper();
+          else if (action === 'getQuizQuestions') runner.getQuizQuestions(payload.quizSheetName);
+          else if (action === 'getUserSubmission') runner.getUserSubmission(payload.department, payload.fullName, payload.quizSheetName);
+          else if (action === 'submitQuiz') runner.submitQuiz(payload);
+          else if (action === 'saveAdminSettings') runner.saveAdminSettings(payload.password, payload.quizSheetName, payload.enableAnswerMode, payload.displayLayout, payload.isGlobalScope);
+          else reject(new Error('Unknown action: ' + action));
+        });
+      } 
+      // 2. หากรันอยู่บน GitHub Pages
+      else {
+        if (!GAS_WEB_APP_URL || GAS_WEB_APP_URL.includes("วาง_WEB_APP_URL")) {
+          throw new Error("กรุณาระบุ GAS_WEB_APP_URL ในไฟล์ Index.html เมื่อใช้งานบน GitHub Pages");
+        }
+        const response = await fetch(GAS_WEB_APP_URL, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify({ action, ...payload })
+        });
+        if (!response.ok) throw new Error("เกิดข้อผิดพลาดในการเชื่อมต่อเครือข่าย");
+        return await response.json();
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      loadInitialData();
+    });
+
+    async function loadInitialData() {
+      Swal.fire({
+        title: 'กำลังโหลดข้อมูล...',
+        allowOutsideClick: false,
+        didOpen: () => Swal.showLoading()
+      });
+
+      try {
+        const res = await callGasApi('getInitialData');
+        if (res.success) {
+          Swal.close();
+          globalData = res.data;
+          activeQuizSheet = globalData.activeQuizSheet;
+          showAnswerMode = globalData.isGlobalAnswerMode || false;
+          displayLayout = globalData.displayLayout || 'all';
+
+          updateQuizBadge();
+          populateDepartments();
+          populateModalQuizSelect();
+        } else {
+          Swal.fire('ข้อผิดพลาด', res.message, 'error');
+        }
+      } catch (err) {
+        Swal.fire('ข้อผิดพลาดในการเชื่อมต่อ', err.message, 'error');
+      }
+    }
+
+    function updateQuizBadge() {
+      document.getElementById('currentQuizBadge').innerText = `ชุดแบบทดสอบ: ${activeQuizSheet}`;
+    }
+
+    function startTimer() {
+      stopTimer();
+      secondsElapsed = 0;
+      updateTimerDisplay();
+      document.getElementById('quizTimerBadge').style.display = 'inline-flex';
+
+      timerInterval = setInterval(() => {
+        secondsElapsed++;
+        updateTimerDisplay();
+      }, 1000);
+    }
+
+    function stopTimer() {
+      if (timerInterval) {
+        clearInterval(timerInterval);
+        timerInterval = null;
+      }
+    }
+
+    function updateTimerDisplay() {
+      const mins = Math.floor(secondsElapsed / 60);
+      const secs = secondsElapsed % 60;
+      const formattedMins = String(mins).padStart(2, '0');
+      const formattedSecs = String(secs).padStart(2, '0');
+      document.getElementById('timerText').innerText = `${formattedMins}:${formattedSecs}`;
+    }
+
+    function populateDepartments() {
+      const deptSelect = document.getElementById('deptSelect');
+      deptSelect.innerHTML = '<option value="">-- กรุณาเลือกแผนก --</option>';
+      globalData.departments.forEach(dept => {
+        const opt = document.createElement('option');
+        opt.value = dept;
+        opt.textContent = dept;
+        deptSelect.appendChild(opt);
+      });
+    }
+
+    function populateModalQuizSelect() {
+      const select = document.getElementById('modalQuizSelect');
+      select.innerHTML = '';
+      globalData.quizSheets.forEach(sheetName => {
+        const opt = document.createElement('option');
+        opt.value = sheetName;
+        opt.textContent = sheetName;
+        if (sheetName === activeQuizSheet) opt.selected = true;
+        select.appendChild(opt);
+      });
+    }
+
+    function onDepartmentChange() {
+      const selectedDept = document.getElementById('deptSelect').value;
+      const userSelect = document.getElementById('userSelect');
+      
+      userSelect.innerHTML = '<option value="">-- กรุณาเลือกชื่อ-สกุล --</option>';
+      resetQuizUI();
+
+      if (!selectedDept) {
+        userSelect.disabled = true;
+        return;
+      }
+
+      const filteredUsers = globalData.users.filter(u => u.department === selectedDept);
+      filteredUsers.forEach(u => {
+        const opt = document.createElement('option');
+        opt.value = u.fullName;
+        opt.textContent = u.fullName;
+        userSelect.appendChild(opt);
+      });
+
+      userSelect.disabled = false;
+    }
+
+    async function onUserChange() {
+      const dept = document.getElementById('deptSelect').value;
+      const name = document.getElementById('userSelect').value;
+
+      if (!dept || !name) {
+        resetQuizUI();
+        return;
+      }
+
+      Swal.fire({
+        title: 'กำลังโหลดชุดแบบทดสอบ...',
+        allowOutsideClick: false,
+        didOpen: () => Swal.showLoading()
+      });
+
+      try {
+        const qRes = await callGasApi('getQuizQuestions', { quizSheetName: activeQuizSheet });
+        if (!qRes.success) {
+          Swal.fire('ข้อผิดพลาด', qRes.message, 'error');
+          return;
+        }
+
+        currentQuestions = qRes.questions;
+        shuffledQuestions = shuffleArray(currentQuestions);
+        currentQuestionIndex = 0;
+
+        const subRes = await callGasApi('getUserSubmission', {
+          department: dept,
+          fullName: name,
+          quizSheetName: activeQuizSheet
+        });
+
+        Swal.close();
+        const statusBanner = document.getElementById('statusBanner');
+        const statusText = document.getElementById('statusBannerText');
+
+        if (subRes.submitted) {
+          isUserSubmitted = true;
+          statusBanner.style.display = 'flex';
+          statusText.innerHTML = showAnswerMode 
+            ? `ผู้ทำแบบทดสอบท่านนี้ทำชุดนี้เรียบร้อยแล้ว (คะแนนที่ได้: <strong>${subRes.totalScore} / ${subRes.totalQuestions}</strong> คะแนน)`
+            : `ผู้ทำแบบทดสอบท่านนี้ทำชุดนี้เรียบร้อยแล้ว`;
+
+          savedCorrectAnswers = subRes.correctAnswers || {};
+          scoresPerQuestionGlobal = subRes.scoresPerQuestion;
+          
+          stopTimer();
+          document.getElementById('quizTimerBadge').style.display = 'none';
+          renderQuizForm(true, subRes.scoresPerQuestion);
+        } else {
+          isUserSubmitted = false;
+          statusBanner.style.display = 'none';
+          scoresPerQuestionGlobal = null;
+          
+          startTimer();
+          renderQuizForm(false, null);
+        }
+      } catch (err) {
+        Swal.fire('ข้อผิดพลาด', err.message, 'error');
+      }
+    }
+
+    function shuffleArray(array) {
+      const arr = [...array];
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+      return arr;
+    }
+
+    function renderQuizForm(isSubmitted, scoresPerQuestion) {
+      const container = document.getElementById('quizContainer');
+      const btnSubmit = document.getElementById('btnSubmit');
+      const singleNavBar = document.getElementById('singleNavBar');
+
+      const forceAllMode = isSubmitted || showAnswerMode;
+
+      if (forceAllMode || displayLayout === 'all') {
+        singleNavBar.style.display = 'none';
+        renderAllQuestionsView(container, isSubmitted, scoresPerQuestion);
+        btnSubmit.style.display = 'block';
+
+        if (isSubmitted) {
+          btnSubmit.disabled = true;
+          btnSubmit.innerHTML = '<i class="fa-solid fa-lock"></i> ทำแบบทดสอบชุดนี้เรียบร้อยแล้ว';
+        } else {
+          btnSubmit.disabled = false;
+          btnSubmit.innerHTML = '<i class="fa-solid fa-paper-plane"></i> ส่งคำตอบ';
+        }
+      } else {
+        singleNavBar.style.display = 'flex';
+        renderSingleQuestionView(container);
+        btnSubmit.style.display = 'block';
+        btnSubmit.disabled = false;
+        btnSubmit.innerHTML = '<i class="fa-solid fa-paper-plane"></i> ส่งคำตอบ';
+      }
+    }
+
+    function renderAllQuestionsView(container, isSubmitted, scoresPerQuestion) {
+      let questionsToRender = isSubmitted ? currentQuestions : shuffledQuestions;
+
+      let html = '';
+      questionsToRender.forEach((q, index) => {
+        const qId = q.id;
+        const isCorrect = scoresPerQuestion ? scoresPerQuestion[qId] === 1 : false;
+
+        let itemClass = 'question-item';
+
+        if (showAnswerMode && isSubmitted && scoresPerQuestion) {
+          itemClass += isCorrect ? ' is-correct' : ' is-incorrect';
+        }
+
+        html += `
+          <div class="${itemClass}" id="q-card-${qId}">
+            <div class="question-text">ข้อที่ ${index + 1}: ${q.question}</div>
+            <div class="options-grid">
+        `;
+
+        Object.keys(q.options).forEach(choiceKey => {
+          const choiceText = q.options[choiceKey];
+          const radioName = `q_${qId}`;
+          const isChecked = savedUserAnswers[qId] === choiceKey ? 'checked' : '';
+          const isDisabled = isSubmitted ? 'disabled' : '';
+
+          html += `
+            <label class="option-label">
+              <input type="radio" name="${radioName}" value="${choiceKey}" ${isChecked} ${isDisabled} onchange="onChoiceSelect(${qId}, '${choiceKey}')">
+              <span><strong>(${choiceKey})</strong> ${choiceText}</span>
+            </label>
+          `;
+        });
+
+        if (showAnswerMode && savedCorrectAnswers[qId]) {
+          const correctKey = savedCorrectAnswers[qId];
+          html += `
+            <div style="margin-top: 10px; font-size: 0.9rem; color: #15803d;">
+              <i class="fa-solid fa-circle-check"></i> <strong>เฉลยคำตอบที่ถูกต้อง:</strong> ข้อ (${correctKey}) ${q.options[correctKey] || ''}
+            </div>
+          `;
+        }
+
+        html += `</div></div>`;
+      });
+
+      container.innerHTML = html;
+    }
+
+    function renderSingleQuestionView(container) {
+      const q = shuffledQuestions[currentQuestionIndex];
+      const qId = q.id;
+      const total = shuffledQuestions.length;
+
+      document.getElementById('questionProgress').innerText = `ข้อ ${currentQuestionIndex + 1} / ${total}`;
+      document.getElementById('btnPrevQ').disabled = currentQuestionIndex === 0;
+      document.getElementById('btnNextQ').disabled = currentQuestionIndex === total - 1;
+
+      let html = `
+        <div class="question-item" id="q-card-${qId}">
+          <div class="question-text">ข้อที่ ${currentQuestionIndex + 1}: ${q.question}</div>
+          <div class="options-grid">
+      `;
+
+      Object.keys(q.options).forEach(choiceKey => {
+        const choiceText = q.options[choiceKey];
+        const radioName = `q_${qId}`;
+        const isChecked = savedUserAnswers[qId] === choiceKey ? 'checked' : '';
+
+        html += `
+          <label class="option-label">
+            <input type="radio" name="${radioName}" value="${choiceKey}" ${isChecked} onchange="onChoiceSelect(${qId}, '${choiceKey}')">
+            <span><strong>(${choiceKey})</strong> ${choiceText}</span>
+          </label>
+        `;
+      });
+
+      html += `</div></div>`;
+      container.innerHTML = html;
+    }
+
+    function prevQuestion() {
+      if (currentQuestionIndex > 0) {
+        currentQuestionIndex--;
+        renderSingleQuestionView(document.getElementById('quizContainer'));
+      }
+    }
+
+    function nextQuestion() {
+      if (currentQuestionIndex < shuffledQuestions.length - 1) {
+        currentQuestionIndex++;
+        renderSingleQuestionView(document.getElementById('quizContainer'));
+      }
+    }
+
+    function onChoiceSelect(qId, choiceKey) {
+      savedUserAnswers[qId] = choiceKey;
+    }
+
+    function submitAnswers() {
+      const dept = document.getElementById('deptSelect').value;
+      const name = document.getElementById('userSelect').value;
+
+      if (!dept || !name) {
+        Swal.fire('แจ้งเตือน', 'กรุณาเลือกแผนกและชื่อ-สกุลก่อนส่งคำตอบ', 'warning');
+        return;
+      }
+
+      const totalQ = currentQuestions.length;
+      const answeredQ = Object.keys(savedUserAnswers).length;
+
+      if (answeredQ < totalQ) {
+        Swal.fire({
+          title: 'ตอบคำถามยังไม่ครบ!',
+          text: `คุณตอบไปเพียง ${answeredQ} จาก ${totalQ} ข้อ ต้องการส่งคำตอบหรือไม่?`,
+          icon: 'warning',
+          showCancelButton: true,
+          confirmButtonText: 'ยืนยันส่งคำตอบ',
+          cancelButtonText: 'กลับไปทำต่อ'
+        }).then((result) => {
+          if (result.isConfirmed) processSubmit(dept, name);
+        });
+      } else {
+        processSubmit(dept, name);
+      }
+    }
+
+    async function processSubmit(dept, name) {
+      Swal.fire({
+        title: 'กำลังบันทึกคำตอบ...',
+        allowOutsideClick: false,
+        didOpen: () => Swal.showLoading()
+      });
+
+      try {
+        const res = await callGasApi('submitQuiz', {
+          department: dept,
+          fullName: name,
+          quizSheetName: activeQuizSheet,
+          userAnswers: savedUserAnswers
+        });
+
+        if (res.success) {
+          stopTimer();
+          let timeUsedText = document.getElementById('timerText').innerText;
+
+          let successText = showAnswerMode 
+            ? `ใช้เวลาทำแบบทดสอบ: ${timeUsedText} นาที\nคะแนนของคุณคือ ${res.totalScore} / ${res.totalQuestions} คะแนน` 
+            : `ใช้เวลาทำแบบทดสอบ: ${timeUsedText} นาที\nระบบได้บันทึกคำตอบของคุณเรียบร้อยแล้ว`;
+
+          Swal.fire({
+            icon: 'success',
+            title: 'ส่งคำตอบเรียบร้อยแล้ว!',
+            text: successText,
+            confirmButtonText: 'ตกลง'
+          }).then(() => {
+            savedCorrectAnswers = res.correctAnswers;
+            onUserChange();
+          });
+        } else {
+          Swal.fire('ข้อผิดพลาด', res.message, 'error');
+        }
+      } catch (err) {
+        Swal.fire('ข้อผิดพลาด', err.message, 'error');
+      }
+    }
+
+    function resetQuizUI() {
+      stopTimer();
+      document.getElementById('quizTimerBadge').style.display = 'none';
+      document.getElementById('quizContainer').innerHTML = '<p style="text-align: center; color: var(--text-muted); padding: 20px 0;">กรุณาเลือกข้อมูลให้ครบถ้วนเพื่อเริ่มทำแบบทดสอบ</p>';
+      document.getElementById('btnSubmit').style.display = 'none';
+      document.getElementById('singleNavBar').style.display = 'none';
+      document.getElementById('statusBanner').style.display = 'none';
+      savedUserAnswers = {};
+      currentQuestionIndex = 0;
+    }
+
+    function setFontSize(size, btnElement) {
+      document.documentElement.style.setProperty('--font-size-base', size + 'px');
+      document.querySelectorAll('.font-btn').forEach(b => b.classList.remove('active'));
+      btnElement.classList.add('active');
+    }
+
+    function openSettingsModal() {
+      document.getElementById('adminPassword').value = '';
+      document.getElementById('passwordSection').style.display = 'block';
+      document.getElementById('adminControlsSection').style.display = 'none';
+      
+      document.getElementById('modalQuizSelect').value = activeQuizSheet;
+      document.getElementById('modalLayoutSelect').value = displayLayout;
+      document.getElementById('modalAnswerModeSelect').value = showAnswerMode ? 'true' : 'false';
+      document.getElementById('modalScopeSelect').value = 'global';
+      document.getElementById('settingsModal').style.display = 'flex';
+    }
+
+    function closeSettingsModal() {
+      document.getElementById('settingsModal').style.display = 'none';
+    }
+
+    function verifyAndUnlockSettings() {
+      const pwd = document.getElementById('adminPassword').value;
+      if (pwd === '122123') {
+        document.getElementById('passwordSection').style.display = 'none';
+        document.getElementById('adminControlsSection').style.display = 'block';
+      } else {
+        Swal.fire('ผิดพลาด', 'รหัสผ่านไม่ถูกต้อง', 'error');
+      }
+    }
+
+    async function saveSettings() {
+      const newQuizSheet = document.getElementById('modalQuizSelect').value;
+      const newLayout = document.getElementById('modalLayoutSelect').value;
+      const enableAnswerMode = document.getElementById('modalAnswerModeSelect').value === 'true';
+      const isGlobalScope = document.getElementById('modalScopeSelect').value === 'global';
+
+      if (!isGlobalScope) {
+        // Local Scope
+        activeQuizSheet = newQuizSheet;
+        displayLayout = newLayout;
+        showAnswerMode = enableAnswerMode;
+
+        updateQuizBadge();
+        Swal.fire('สำเร็จ', 'บันทึกการตั้งค่าบนเครื่องนี้เรียบร้อยแล้ว', 'success');
+        closeSettingsModal();
+
+        if (document.getElementById('userSelect').value) {
+          onUserChange();
+        } else {
+          resetQuizUI();
+        }
+      } else {
+        // Global Scope
+        Swal.fire({
+          title: 'กำลังบันทึกตั้งค่าระดับระบบ...',
+          allowOutsideClick: false,
+          didOpen: () => Swal.showLoading()
+        });
+
+        try {
+          const res = await callGasApi('saveAdminSettings', {
+            password: '122123',
+            quizSheetName: newQuizSheet,
+            enableAnswerMode: enableAnswerMode,
+            displayLayout: newLayout,
+            isGlobalScope: true
+          });
+
+          if (res.success) {
+            activeQuizSheet = res.activeQuizSheet;
+            displayLayout = res.displayLayout;
+            showAnswerMode = res.showAnswerMode;
+
+            updateQuizBadge();
+            Swal.fire('สำเร็จ', res.message, 'success');
+            closeSettingsModal();
+
+            if (document.getElementById('userSelect').value) {
+              onUserChange();
+            } else {
+              resetQuizUI();
+            }
+          } else {
+            Swal.fire('ผิดพลาด', res.message, 'error');
+          }
+        } catch (err) {
+          Swal.fire('ผิดพลาด', err.message, 'error');
+        }
+      }
+    }
+  </script>
+
+</body>
+</html>
